@@ -122,6 +122,10 @@ lib LibWindows
     daylight_bias : Long
   end
 
+  TIME_ZONE_ID_UNKNOWN  = 0u32
+  TIME_ZONE_ID_STANDARD = 1u32
+  TIME_ZONE_ID_DAYLIGHT = 2u32
+
   struct FileTime
     low_date_time : DWord
     high_date_time : DWord
