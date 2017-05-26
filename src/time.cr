@@ -615,18 +615,27 @@ struct Time
     {% end %}
 
     unless offset
-      {% if !flag?(:windows) %}
-        # current TZ may have DST, either in past, present or future
-        ret = LibC.localtime_r(pointerof(second), out tm)
-        raise Errno.new("localtime_r") if ret.null?
-        offset = tm.tm_gmtoff.to_i64
-      {% else %}
-        # TODO handle daylight?
+      {% if flag?(:windows) %}
+        # NOTE the `second` param is always the returned value
+        # of `compute_second_and_tenth_microsecond`, which means is the current time.
+        # Using GetTimeZoneInformation is sound since it returns TZ info of the current time.
         # https://msdn.microsoft.com/en-us/library/windows/desktop/ms724421(v=vs.85).aspx
         ret = LibWindows.get_time_zone_information(out tz)
         raise WinError.new("GetTimeZoneInformation") if ret == -1
         # UTC = local time + bias
-        return tz.bias.to_i64 * - Span::TicksPerMinute
+        return (case ret
+                when LibWindows::TIME_ZONE_ID_STANDARD
+                  tz.standard_bias
+                when LibWindows::TIME_ZONE_ID_DAYLIGHT
+                  tz.daylight_bias
+                else
+                  0i64
+                end.to_i64 + tz.bias.to_i64) * - Span::TicksPerMinute
+      {% else %}
+        # current TZ may have DST, either in past, present or future
+        ret = LibC.localtime_r(pointerof(second), out tm)
+        raise Errno.new("localtime_r") if ret.null?
+        offset = tm.tm_gmtoff.to_i64
       {% end %}
     end
 
