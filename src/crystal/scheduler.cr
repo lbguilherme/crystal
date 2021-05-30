@@ -56,10 +56,6 @@ class Crystal::Scheduler
     Thread.current.scheduler.yield
   end
 
-  def self.yield(fiber : Fiber) : Nil
-    Thread.current.scheduler.yield(fiber)
-  end
-
   {% if flag?(:preview_mt) %}
     def self.enqueue_free_stack(stack : Void*) : Nil
       Thread.current.scheduler.enqueue_free_stack(stack)
@@ -164,11 +160,6 @@ class Crystal::Scheduler
 
   protected def yield : Nil
     sleep(0.seconds)
-  end
-
-  protected def yield(fiber : Fiber) : Nil
-    @current.resume_event.add(0.seconds)
-    resume(fiber)
   end
 
   {% if flag?(:preview_mt) %}
